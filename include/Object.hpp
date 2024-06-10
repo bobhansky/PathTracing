@@ -19,7 +19,7 @@ public:
 	// if intersect then update inter data
 	// orig: ray origin
 	// dir: ray direction
-	virtual bool intersect(const Vector3f& orig, const Vector3f& dir, Intersection& inter) = 0;
+	virtual bool intersect(const Vector3d& orig, const Vector3d& dir, Intersection& inter) = 0;
 
 	Object() {
 
@@ -38,8 +38,8 @@ public:
 	// initialize the bound of this object
 	virtual void initializeBound() = 0;
 	// get the surface area of this object
-	virtual float getArea() = 0;
+	virtual double getArea() = 0;
 	// randomly sample a point on the surface of this object
-	virtual void samplePoint(Intersection& inter, float& pdf) = 0;
+	virtual void samplePoint(Intersection& inter, double& pdf) = 0;
 	
 };

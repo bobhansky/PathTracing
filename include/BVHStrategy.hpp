@@ -6,21 +6,21 @@
 
 class BVHStrategy : public IIntersectStrategy {
 	virtual void UpdateInter(Intersection& inter, Scene& sce, 
-		const Vector3f & rayOrig, const Vector3f& rayDir)override {
+		const Vector3d & rayOrig, const Vector3d& rayDir)override {
 		inter = getIntersection(sce.BVHaccelerator->getNode(), rayOrig, rayDir);
 	}
 
-	virtual float getShadowCoeffi(Scene& sce, Intersection& p, Vector3f& lightPos) override{
-		Vector3f orig = p.pos;
+	virtual double getShadowCoeffi(Scene& sce, Intersection& p, Vector3d& lightPos) override{
+		Vector3d orig = p.pos;
 		orig = orig + 0.0005f * p.nDir;
-		Vector3f raydir = normalized(lightPos - orig);
+		Vector3d raydir = normalized(lightPos - orig);
 
-		float distance = (lightPos - orig).norm();
+		double distance = (lightPos - orig).norm();
 		
 		return ShadowHelper(sce.BVHaccelerator->getNode(), orig, raydir, distance);
 	}
 
-	float ShadowHelper(BVHNode* node, const Vector3f& rayOrig, const Vector3f& rayDir, float dis) {
+	double ShadowHelper(BVHNode* node, const Vector3d& rayOrig, const Vector3d& rayDir, double dis) {
 		if (!node) return 1;
 		// if ray miss this bound
 		if (!node->bound.IntersectRay(rayOrig, rayDir))
@@ -38,8 +38,8 @@ class BVHStrategy : public IIntersectStrategy {
 		}
 
 		// if node is a internal node
-		float l = ShadowHelper(node->left, rayOrig, rayDir, dis);
-		float r = ShadowHelper(node->right, rayOrig, rayDir, dis);
+		double l = ShadowHelper(node->left, rayOrig, rayDir, dis);
+		double r = ShadowHelper(node->right, rayOrig, rayDir, dis);
 
 		return l * r;
 	}

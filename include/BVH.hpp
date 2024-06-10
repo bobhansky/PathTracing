@@ -142,7 +142,7 @@ private:
 
 
 // get the Intersection with ginven BVHnode, and ray info
-Intersection getIntersection(BVHNode* node, const Vector3f& rayOrig, const Vector3f& rayDir) {
+Intersection getIntersection(BVHNode* node, const Vector3d& rayOrig, const Vector3d& rayDir) {
 	Intersection inter;
 	if (!node) return inter;
 	// if ray miss this bound
@@ -167,7 +167,7 @@ Intersection getIntersection(BVHNode* node, const Vector3f& rayOrig, const Vecto
 }
 
 // test if there's a intesection with non-emissive obj, used for shadow ray
-bool hasIntersection(BVHNode* node, const Vector3f& rayOrig, const Vector3f& rayDir, float dis) {
+bool hasIntersection(BVHNode* node, const Vector3d& rayOrig, const Vector3d& rayDir, double dis) {
 	if (!node) return false;
 
 	if (!node->bound.IntersectRay(rayOrig, rayDir))

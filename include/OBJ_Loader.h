@@ -37,7 +37,7 @@ namespace objl
             Y = 0.0f;
         }
         // Variable Set Constructor
-        Vector2(float X_, float Y_)
+        Vector2(double X_, double Y_)
         {
             X = X_;
             Y = Y_;
@@ -62,15 +62,15 @@ namespace objl
         {
             return Vector2(this->X - right.X, this->Y - right.Y);
         }
-        // Float Multiplication Operator Overload
-        Vector2 operator*(const float& other) const
+        // double Multiplication Operator Overload
+        Vector2 operator*(const double& other) const
         {
             return Vector2(this->X *other, this->Y * other);
         }
 
         // Positional Variables
-        float X;
-        float Y;
+        double X;
+        double Y;
     };
 
     // Structure: Vector3
@@ -86,7 +86,7 @@ namespace objl
             Z = 0.0f;
         }
         // Variable Set Constructor
-        Vector3(float X_, float Y_, float Z_)
+        Vector3(double X_, double Y_, double Z_)
         {
             X = X_;
             Y = Y_;
@@ -112,21 +112,21 @@ namespace objl
         {
             return Vector3(this->X - right.X, this->Y - right.Y, this->Z - right.Z);
         }
-        // Float Multiplication Operator Overload
-        Vector3 operator*(const float& other) const
+        // double Multiplication Operator Overload
+        Vector3 operator*(const double& other) const
         {
             return Vector3(this->X * other, this->Y * other, this->Z * other);
         }
-        // Float Division Operator Overload
-        Vector3 operator/(const float& other) const
+        // double Division Operator Overload
+        Vector3 operator/(const double& other) const
         {
             return Vector3(this->X / other, this->Y / other, this->Z / other);
         }
 
         // Positional Variables
-        float X;
-        float Y;
-        float Z;
+        double X;
+        double Y;
+        double Z;
     };
 
     // Structure: Vertex
@@ -165,11 +165,11 @@ namespace objl
         // Specular Color
         Vector3 Ks;
         // Specular Exponent
-        float Ns;
+        double Ns;
         // Optical Density
-        float Ni;
+        double Ni;
         // Dissolve
-        float d;
+        double d;
         // Illumination
         int illum;
         // Ambient Texture Map
@@ -229,21 +229,21 @@ namespace objl
         }
 
         // Vector3 Magnitude Calculation
-        float MagnitudeV3(const Vector3 in)
+        double MagnitudeV3(const Vector3 in)
         {
             return (sqrtf(powf(in.X, 2) + powf(in.Y, 2) + powf(in.Z, 2)));
         }
 
         // Vector3 DotProduct
-        float DotV3(const Vector3 a, const Vector3 b)
+        double DotV3(const Vector3 a, const Vector3 b)
         {
             return (a.X * b.X) + (a.Y * b.Y) + (a.Z * b.Z);
         }
 
         // Angle between 2 Vector3 Objects
-        float AngleBetweenV3(const Vector3 a, const Vector3 b)
+        double AngleBetweenV3(const Vector3 a, const Vector3 b)
         {
-            float angle = DotV3(a, b);
+            double angle = DotV3(a, b);
             angle /= (MagnitudeV3(a) * MagnitudeV3(b));
             return angle = acosf(angle);
         }
@@ -263,7 +263,7 @@ namespace objl
     namespace algorithm
     {
         // Vector3 Multiplication Opertor Overload
-        Vector3 operator*(const float& left, const Vector3& right)
+        Vector3 operator*(const double& left, const Vector3& right)
         {
             return Vector3(right.X * left, right.Y * left, right.Z * left);
         }
@@ -949,7 +949,7 @@ namespace objl
                     }
 
                     // If Vertex is not an interior vertex
-                    float angle = math::AngleBetweenV3(pPrev.Position - pCur.Position, pNext.Position - pCur.Position) * (180 / 3.14159265359);
+                    double angle = math::AngleBetweenV3(pPrev.Position - pCur.Position, pNext.Position - pCur.Position) * (180 / 3.14159265359);
                     if (angle <= 0 && angle >= 180)
                         continue;
 

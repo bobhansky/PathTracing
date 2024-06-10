@@ -14,11 +14,11 @@ class Intersection {
 public:
 
 	bool intersected = false;
-	float t = FLT_MAX;	// pos = rayPos + t * rayDir
-	Vector3f pos;
-	Vector3f nDir; // normal direction
+	double t = FLT_MAX;	// pos = rayPos + t * rayDir
+	Vector3d pos;
+	Vector3d nDir; // normal direction
 
-	Vector2f textPos;	// texture coordinates if any	(-1, -1) means no texture
+	Vector2d textPos;	// texture coordinates if any	(-1, -1) means no texture
 	int diffuseIndex = -1;
 	int normalMapIndex = -1;
 	int roughnessMapIndex = -1;

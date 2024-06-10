@@ -16,31 +16,32 @@
 #include "Material.hpp"
 #include "Texture.hpp"
 #include "OBJ_Loader.h"
+#include "Camera.hpp"
 
 
 bool PRINT = false;			// debug helper
 int SPP = 16;
-float SPP_inv = 1.f / SPP;
-//float Russian_Roulette = 0.78f;
+double SPP_inv = 1.0 / SPP;
+//double Russian_Roulette = 0.78f;
 
 #define EXPEDITE 1		// BVH to expedite intersection
 #define MULTITHREAD	1		// multi threads to expedite, comment it out for better ebug
 #define N_THREAD 20
 #define MIS	1			// Multiple Importance Sampling
 #define GAMMA_COORECTION 
-#define GAMMA_VAL 0.78f
+#define GAMMA_VAL 0.78
 #define MAX_DEPTH 16
 #define MIN_DEPTH 3
-#define MIN_DIVISOR 0.03f
+#define MIN_DIVISOR 0.03
 
 // these are used for debugging: saving ray info to disk
 // if record, use low SPP and MAX_DEPTH, otherwise the data is HUGE
 // RECORD is only for std::treads multithreading
 #define RECORD 0		
-#define RECORD_MIN_X 576
-#define RECORD_MAX_X 610
-#define RECORD_MIN_Y 679
-#define RECORD_MAX_Y 727
+#define RECORD_MIN_X 477
+#define RECORD_MAX_X 478
+#define RECORD_MIN_Y 382
+#define RECORD_MAX_Y 383
 
 //#define HDR_ONLY	// it would disable HDR_BLOOM
 #define HDR_BLOOM
@@ -60,7 +61,6 @@ public:
 	std::ifstream fin;
 	std::ofstream fout;
 	const char* inputName;	
-	Texture output;						// pixel data, output rgb
 	std::vector<Texture*> diffuseMaps;	// texture data
 	std::vector<Texture*> normalMaps;    // normalMap array
 	std::vector<Texture*> roughnessMaps;		// texture data
@@ -70,17 +70,18 @@ public:
 	//------------------ reading data: rendering setting and my own obj loader (replaced by OBJ_Loader)
 	int width = -1;
 	int height = -1;
-	Vector3f eyePos = Vector3f(FLT_MAX, 0, 0);
-	Vector3f viewdir = Vector3f(FLT_MAX, 0, 0);
+	Vector3d eyePos = Vector3d(FLT_MAX, 0, 0);
+	Vector3d viewdir = Vector3d(FLT_MAX, 0, 0);
 	int hfov = -1;
-	Vector3f updir = Vector3f(FLT_MAX, 0, 0);
-	Vector3f bkgcolor = Vector3f(FLT_MAX, 0, 0);
-	float eta;							// index of refraction of this scene
+	Vector3d updir = Vector3d(FLT_MAX, 0, 0);
+	Vector3d bkgcolor = Vector3d(FLT_MAX, 0, 0);
+	double eta;							// index of refraction of this scene
 	Scene scene;
+	Camera cam;
 	int integrateType = -1;
-	std::vector<Vector3f> vertices;		// triangle vertex array
-	std::vector<Vector3f> normals;		// vertex normal array
-	std::vector<Vector2f> textCoords;   // texture coordinates array
+	std::vector<Vector3d> vertices;		// triangle vertex array
+	std::vector<Vector3d> normals;		// vertex normal array
+	std::vector<Vector2d> textCoords;   // texture coordinates array
 
 	bool isTextureOn = false;
 	int textIndex = -1;					// texture index, always points to the activated texture in the textures array
@@ -93,8 +94,8 @@ public:
 	Material mtlcolor;			  // temp buffer for material color	default 0 0 0
 	// ******* depthcueing *******
 	bool depthCueing = false;	// depthcueing flag
-	Vector3f dc;				// depthcueing color
-	float amin, amax, distmin, distmax;
+	Vector3d dc;				// depthcueing color
+	double amin, amax, distmin, distmax;
 	// ******* depthcueing ends ********
 //----------------- reading data ends
 
@@ -204,21 +205,21 @@ public:
 					objl::Vertex v = m.Vertices[i+j];
 
 					if (j == 0) {
-						t->v0 = Vector3f(v.Position.X, v.Position.Y, v.Position.Z);
-						t->n0 = Vector3f(v.Normal.X, v.Normal.Y, v.Normal.Z);
-						t->uv0 = Vector2f(v.TextureCoordinate.X, v.TextureCoordinate.Y);
+						t->v0 = Vector3d(v.Position.X, v.Position.Y, v.Position.Z);
+						t->n0 = Vector3d(v.Normal.X, v.Normal.Y, v.Normal.Z);
+						t->uv0 = Vector2d(v.TextureCoordinate.X, v.TextureCoordinate.Y);
 					}
 
 					else if (j == 1) {
-						t->v1 = Vector3f(v.Position.X, v.Position.Y, v.Position.Z);
-						t->n1 = Vector3f(v.Normal.X, v.Normal.Y, v.Normal.Z);
-						t->uv1 = Vector2f(v.TextureCoordinate.X, v.TextureCoordinate.Y);
+						t->v1 = Vector3d(v.Position.X, v.Position.Y, v.Position.Z);
+						t->n1 = Vector3d(v.Normal.X, v.Normal.Y, v.Normal.Z);
+						t->uv1 = Vector2d(v.TextureCoordinate.X, v.TextureCoordinate.Y);
 					}
 
 					else if (j == 2) {
-						t->v2 = Vector3f(v.Position.X, v.Position.Y, v.Position.Z);
-						t->n2 = Vector3f(v.Normal.X, v.Normal.Y, v.Normal.Z);
-						t->uv2 = Vector2f(v.TextureCoordinate.X, v.TextureCoordinate.Y);
+						t->v2 = Vector3d(v.Position.X, v.Position.Y, v.Position.Z);
+						t->n2 = Vector3d(v.Normal.X, v.Normal.Y, v.Normal.Z);
+						t->uv2 = Vector2d(v.TextureCoordinate.X, v.TextureCoordinate.Y);
 					}
 				}
 				t->mtlcolor = mtlcolor;
@@ -237,7 +238,7 @@ public:
 		
 	}
 
-	void transObj(objl::Loader& loader, float xOff, float yOff, float zOff) {
+	void transObj(objl::Loader& loader, double xOff, double yOff, double zOff) {
 		for (auto &m : loader.LoadedMeshes) {
 			for (int i = 0; i < m.Vertices.size(); i ++) {
 				// each triangle
@@ -248,7 +249,7 @@ public:
 		}
 	}
 
-	void scaleObj(objl::Loader& loader, float xScale, float yScale, float zScale) {
+	void scaleObj(objl::Loader& loader, double xScale, double yScale, double zScale) {
 		for (auto &m : loader.LoadedMeshes) {
 			for (int i = 0; i < m.Vertices.size(); i ++) {
 				// each triangle
@@ -261,20 +262,20 @@ public:
 
 	// in degree
 	// axis: 0 x   1 y  2 z, world coords
-	void rotateObj(objl::Loader& loader, int axis, float degree) {
+	void rotateObj(objl::Loader& loader, int axis, double degree) {
 		if (degree == 0) return;
 
-		float rad = degree2Radians(degree);
+		double rad = degree2Radians(degree);
 		for (auto& m : loader.LoadedMeshes) {
 			for (int i = 0; i < m.Vertices.size(); i++) {
 				// each triangle
-				float X = m.Vertices[i].Position.X;
-				float Y = m.Vertices[i].Position.Y;
-				float Z = m.Vertices[i].Position.Z;
+				double X = m.Vertices[i].Position.X;
+				double Y = m.Vertices[i].Position.Y;
+				double Z = m.Vertices[i].Position.Z;
 
-				float NX = m.Vertices[i].Normal.X;
-				float NY = m.Vertices[i].Normal.Y;
-				float NZ = m.Vertices[i].Normal.Z;
+				double NX = m.Vertices[i].Normal.X;
+				double NY = m.Vertices[i].Normal.Y;
+				double NZ = m.Vertices[i].Normal.Z;
 
 				if (axis == 0) {
 					m.Vertices[i].Position.Y = cos(rad) * Y - sin(rad) * Z;
@@ -325,11 +326,15 @@ public:
 				throw std::runtime_error("invalid viewPlane infomation: updir and view dir can't be the same");
 			}
 
-			// initialize the rgb arrays
-			output.rgb.resize(width * height);
-			output.rgb.assign(width * height, Vector3f( bkgcolor.x,  bkgcolor.y,  bkgcolor.z));	//  set to bkgcolor
-			output.width = width;
-			output.height = height;
+			// initialize camera
+
+			cam.width = width;
+			cam.height = height;
+			cam.hfov = hfov;
+			cam.position = eyePos;
+			cam.fwdDir = viewdir;
+			cam.upDir = updir;
+			cam.initialize(bkgcolor);
 		}
 
 		catch (std::runtime_error e) {
@@ -363,7 +368,7 @@ public:
 			
 			//checkFloat(t0); checkFloat(t1); checkFloat(t2); 
 			
-			Vector3f vertex;
+			Vector3d vertex;
 			vertex.x = std::stof(t0);
 			vertex.y = std::stof(t1);
 			vertex.z = std::stof(t2);
@@ -473,7 +478,7 @@ public:
 
 			checkFloat(t0); checkFloat(t1); checkFloat(t2);
 
-			Vector3f normal;
+			Vector3d normal;
 			normal.x = std::stof(t0);
 			normal.y = std::stof(t1);
 			normal.z = std::stof(t2);
@@ -485,7 +490,7 @@ public:
 		case 4: { // texture coordinates    vt
 			checkFin(); fin >> t0; checkFin(); fin >> t1;
 			checkFloat(t0); checkFloat(t1);
-			Vector2f uv(std::stof(t0), std::stof(t1));
+			Vector2d uv(std::stof(t0), std::stof(t1));
 
 			textCoords.emplace_back(uv);
 			break;
@@ -729,11 +734,11 @@ public:
 				// in normal map, x y components can be in range -1 to 1
 				// z from 0 to 1
 				for (int i = 0; i < normalMaps[bumpIndex]->rgb.size();i++) {
-					Vector3f& c = normalMaps[bumpIndex]->rgb[i];
-					c = c * 2.f;
-					c.x = c.x - 1.f;
-					c.y = c.y - 1.f;
-					c.z = c.z - 1.f;
+					Vector3d& c = normalMaps[bumpIndex]->rgb[i];
+					c = c * 2.0;
+					c.x = c.x - 1.0;
+					c.y = c.y - 1.0;
+					c.z = c.z - 1.0;
 				}
 			}
 		}
@@ -785,8 +790,11 @@ public:
 			if (!a.compare("path")) {
 				integrateType = 0;
 			}
-			else if (!a.compare("bdpt")) {
+			else if (!a.compare("light")) {
 				integrateType = 1;
+			}
+			else if (!a.compare("bdpt")) {
+				integrateType = 2;
 			}
 			else throw std::runtime_error("unknown integrator\n");
 		}
@@ -825,7 +833,7 @@ public:
 			for (int j = 0; j < width; j++) {
 				size_t index = getIndex(j, i);
 				
-				Vector3f color = output.rgb[index];
+				Vector3d &color = cam.FrameBuffer.rgb[index];
 #ifdef GAMMA_COORECTION
 				// gamma correction
 				color.x = 255 * pow(clamp(0, 1, color.x), GAMMA_VAL);
@@ -888,9 +896,9 @@ public:
 		t.v2 = getEleIn(vertices, index);
 
 		// the normal of 3 vertices are the same:
-		Vector3f e1 = t.v1 - t.v0;
-		Vector3f e2 = t.v2 - t.v0;
-		Vector3f normal = normalized(crossProduct(e1, e2));
+		Vector3d e1 = t.v1 - t.v0;
+		Vector3d e2 = t.v2 - t.v0;
+		Vector3d normal = normalized(crossProduct(e1, e2));
 		t.n0 = normal;
 		t.n1 = normal;
 		t.n2 = normal;
@@ -968,9 +976,9 @@ public:
 		}
 		// set normal: all 3 vertices are the same
 		// the normal of 3 vertices are the same:
-		Vector3f e1 = t.v1 - t.v0;
-		Vector3f e2 = t.v2 - t.v0;
-		Vector3f normal = normalized(crossProduct(e1, e2));
+		Vector3d e1 = t.v1 - t.v0;
+		Vector3d e2 = t.v2 - t.v0;
+		Vector3d normal = normalized(crossProduct(e1, e2));
 		t.n0 = normal;
 		t.n1 = normal;
 		t.n2 = normal;
@@ -1075,7 +1083,7 @@ public:
 				r = std::stoi(b0);
 				g = std::stoi(b1);
 				b = std::stoi(b2);
-				temptext->rgb.emplace_back(Vector3f (r/255.f, g/255.f, b/255.f));
+				temptext->rgb.emplace_back(Vector3d (r/255.0, g/255.0, b/255.0));
 			}
 		}
 		input.clear();

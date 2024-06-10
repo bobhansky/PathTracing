@@ -8,7 +8,7 @@
 // the elementary method
 class BaseInterStrategy : public IIntersectStrategy {
 	virtual void UpdateInter(Intersection& inter, Scene& sce,
-		const Vector3f& rayOrig, const Vector3f& rayDir) override {
+		const Vector3d& rayOrig, const Vector3d& rayDir) override {
 
 		for (const auto& obj : sce.objList) {
 			Intersection interTemp;
@@ -22,15 +22,15 @@ class BaseInterStrategy : public IIntersectStrategy {
 
 	}
 
-	virtual float getShadowCoeffi(Scene& sce, Intersection& p, Vector3f& lightPos) override{
-		Vector3f orig = p.pos;
+	virtual double getShadowCoeffi(Scene& sce, Intersection& p, Vector3d& lightPos) override{
+		Vector3d orig = p.pos;
 		orig = orig + 0.0005f * p.nDir;
-		Vector3f raydir = normalized(lightPos - orig);
-		float distance = (lightPos - orig).norm();
+		Vector3d raydir = normalized(lightPos - orig);
+		double distance = (lightPos - orig).norm();
 
 		// loop through all the objects in the scene 
 		// if there's one valid intersection, thrn return 0
-		float res = 1;
+		double res = 1;
 		for (auto& i : sce.objList) {
 			if (i->mtlcolor.hasEmission()) continue; // do not test with light
 

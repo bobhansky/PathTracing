@@ -10,8 +10,8 @@
 #define STRENGTH 2
 #define GAUSSIANLOOP 1
 #define KERNELSIZE 10
-#define STDDEV 30.f
-#define EXPOSURE 1.5f
+#define STDDEV 30.0
+#define EXPOSURE 1.5
 
 class Postprocessor {
 public:
@@ -60,7 +60,7 @@ public:
 
 	
 
-	Texture getGaussianBlurTexture(Texture *img, int kernelSize, float stddev ) {
+	Texture getGaussianBlurTexture(Texture *img, int kernelSize, double stddev ) {
 		Texture src = *img;
 
 		Texture res;
@@ -70,24 +70,24 @@ public:
 		res.rgb.resize(w * h);
 
 // multithreading is slower than single threading
-		static float E = 2.7182818f;
-		auto gaussian = [](int inputX, float standardDev) -> float {
+		static double E = 2.7182818f;
+		auto gaussian = [](int inputX, double standardDev) -> double {
 			return (1 / sqrt(2 * M_PI * standardDev)) * pow(E, -(inputX * inputX) / (2 * standardDev * standardDev));
 			};
 
 		// blur vertical
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
-				Vector3f& color = res.rgb.at(y * w + x);
+				Vector3d& color = res.rgb.at(y * w + x);
 
 				int startY = -kernelSize * 0.5;
-				Vector3f col;
-				float kernelSum = 0;
+				Vector3d col;
+				double kernelSum = 0;
 
 				for (int i = 0; i < kernelSize; i++) {
-					float U = (float)x / w;
-					float V = (float)(y + i + startY) / h;
-					float gauss = gaussian((startY + i), stddev);
+					double U = (double)x / w;
+					double V = (double)(y + i + startY) / h;
+					double gauss = gaussian((startY + i), stddev);
 					col = col + src.getRGBat(clamp(0, 0.999f, U), clamp(0, 0.999f, V)) * gauss;
 
 					kernelSum += gauss;
@@ -99,16 +99,16 @@ public:
 		src = res;
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
-				Vector3f& color = res.rgb.at(y * w + x);
+				Vector3d& color = res.rgb.at(y * w + x);
 
 				int startX = -kernelSize * 0.5;
-				Vector3f col;
-				float kernelSum = 0;
+				Vector3d col;
+				double kernelSum = 0;
 
 				for (int i = 0; i < kernelSize; i++) {
-					float U = (float)(x + i + startX) / w;
-					float V = (float)y / h;
-					float gauss = gaussian((startX + i), stddev);
+					double U = (double)(x + i + startX) / w;
+					double V = (double)y / h;
+					double gauss = gaussian((startX + i), stddev);
 					col = col + src.getRGBat(clamp(0, 0.999f, U), clamp(0, 0.999f, V)) * gauss;
 					kernelSum += gauss;
 				}
@@ -129,17 +129,17 @@ public:
 
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
-				Vector3f& color = res.rgb.at(y * res.width + x);
+				Vector3d& color = res.rgb.at(y * res.width + x);
 
-				float U = (float)x / w;
-				float V = (float)y / h;
-				Vector3f col = src.getRGBat(clamp(0, 0.999f, U), clamp(0, 0.999f, V));
-				if (col.norm() > 3.f) {	// if emmisive pixel
-					float mx = col.x > col.y ? col.x : col.y;	// should not rescale it, try find a better bloom way
+				double U = (double)x / w;
+				double V = (double)y / h;
+				Vector3d col = src.getRGBat(clamp(0, 0.999f, U), clamp(0, 0.999f, V));
+				if (col.norm() > 3.0) {	// if emmisive pixel
+					double mx = col.x > col.y ? col.x : col.y;	// should not rescale it, try find a better bloom way
 					mx = mx > col.z ? mx : col.z;
-					color.x = rescale(col.x, mx, 0.f, STRENGTH, 0.f);
-					color.y = rescale(col.y, mx, 0.f, STRENGTH, 0.f);
-					color.z = rescale(col.z, mx, 0.f, STRENGTH, 0.f);
+					color.x = rescale(col.x, mx, 0.0, STRENGTH, 0.0);
+					color.y = rescale(col.y, mx, 0.0, STRENGTH, 0.0);
+					color.z = rescale(col.z, mx, 0.0, STRENGTH, 0.0);
 					//color = col;
 				}
 			}
@@ -156,7 +156,7 @@ public:
 
 		for (int x = 0; x < res.width; x++) {
 			for (int y = 0; y < res.height; y++) {
-				Vector3f& color = res.rgb.at(y * res.width + x);
+				Vector3d& color = res.rgb.at(y * res.width + x);
 				color.x += src2.rgb.at(y * res.width + x).x;
 				color.y += src2.rgb.at(y * res.width + x).y;
 				color.z += src2.rgb.at(y * res.width + x).z;
@@ -179,13 +179,13 @@ public:
 
 		for (int y = 0; y < dst.height; y++) {
 			for (int x = 0; x < dst.width; x++) {
-				Vector3f& color = dst.rgb.at(y * src.width + x);
+				Vector3d& color = dst.rgb.at(y * src.width + x);
 
-				float U = (float)x / dst.width;
-				float V = (float)y / dst.height;
-				Vector3f hdrcolor = src.getRGBat(clamp(0, 0.999f, U), clamp(0, 0.999f, V));
+				double U = (double)x / dst.width;
+				double V = (double)y / dst.height;
+				Vector3d hdrcolor = src.getRGBat(clamp(0, 0.999f, U), clamp(0, 0.999f, V));
 				// exposure tone mapping
-				Vector3f mapped;
+				Vector3d mapped;
 				mapped.x = 1 - exp(-hdrcolor.x * EXPOSURE);
 				mapped.y = 1 - exp(-hdrcolor.y * EXPOSURE);
 				mapped.z = 1 - exp(-hdrcolor.z * EXPOSURE);

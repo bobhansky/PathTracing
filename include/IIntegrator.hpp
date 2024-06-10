@@ -12,7 +12,7 @@ std::vector<std::string> records;	// ray information, thread independent string
 
 class IIntegrator {
 public:
-	virtual Vector3f integrate(PPMGenerator* g) = 0;
+	virtual void integrate(PPMGenerator* g) = 0;
 
 protected:
 	IIntersectStrategy* interStrategy;
@@ -23,7 +23,7 @@ protected:
 
 void changeNormalDir(Intersection& inter, PPMGenerator* g) {
 	Texture* nMap = g->normalMaps.at(inter.normalMapIndex);
-	Vector3f color = nMap->getRGBat(inter.textPos.x, inter.textPos.y);
+	Vector3d color = nMap->getRGBat(inter.textPos.x, inter.textPos.y);
 
 	switch (inter.obj->objectType)
 	{
@@ -31,25 +31,25 @@ void changeNormalDir(Intersection& inter, PPMGenerator* g) {
 		Triangle* t = static_cast<Triangle*>(inter.obj);
 		// our triangle start from lower left corner and go counterclockwise
 
-		Vector3f e1 = t->v1 - t->v0;
-		Vector3f e2 = t->v2 - t->v0;
-		Vector3f nDir = crossProduct(e1, e2); // note the order!
+		Vector3d e1 = t->v1 - t->v0;
+		Vector3d e2 = t->v2 - t->v0;
+		Vector3d nDir = crossProduct(e1, e2); // note the order!
 		nDir = normalized(nDir);
 
-		float deltaU1 = t->uv1.x - t->uv0.x;
-		float deltaV1 = t->uv1.y - t->uv0.y;
+		double deltaU1 = t->uv1.x - t->uv0.x;
+		double deltaV1 = t->uv1.y - t->uv0.y;
 
-		float deltaU2 = t->uv2.x - t->uv0.x;
-		float deltaV2 = t->uv2.y - t->uv0.y;
+		double deltaU2 = t->uv2.x - t->uv0.x;
+		double deltaV2 = t->uv2.y - t->uv0.y;
 
-		float coef = 1 / (-deltaU1 * deltaV2 + deltaV1 * deltaU2);
+		double coef = 1 / (-deltaU1 * deltaV2 + deltaV1 * deltaU2);
 
-		Vector3f T = coef * (-deltaV2 * e1 + deltaV1 * e2);
-		Vector3f B = coef * (-deltaU2 * e1 + deltaU1 * e2);
+		Vector3d T = coef * (-deltaV2 * e1 + deltaV1 * e2);
+		Vector3d B = coef * (-deltaU2 * e1 + deltaU1 * e2);
 		T = normalized(T);
 		B = normalized(B);
 
-		Vector3f res;
+		Vector3d res;
 		res.x = T.x * color.x + B.x * color.y + nDir.x * color.z;
 		res.y = T.y * color.x + B.y * color.y + nDir.y * color.z;
 		res.z = T.z * color.x + B.z * color.y + nDir.z * color.z;
@@ -59,13 +59,13 @@ void changeNormalDir(Intersection& inter, PPMGenerator* g) {
 	}
 
 	case SPEHRE: {
-		Vector3f nDir = inter.nDir;
-		Vector3f T = Vector3f(-nDir.y / sqrtf(nDir.x * nDir.x + nDir.y * nDir.y),
-			nDir.x / sqrtf(nDir.x * nDir.x + nDir.y * nDir.y), 0);
+		Vector3d nDir = inter.nDir;
+		Vector3d T = Vector3d(-nDir.y / sqrt(nDir.x * nDir.x + nDir.y * nDir.y),
+			nDir.x / sqrt(nDir.x * nDir.x + nDir.y * nDir.y), 0);
 
-		Vector3f B = crossProduct(nDir, T);
+		Vector3d B = crossProduct(nDir, T);
 
-		Vector3f res;
+		Vector3d res;
 		res.x = T.x * color.x + B.x * color.y + nDir.x * color.z;
 		res.y = T.y * color.x + B.y * color.y + nDir.y * color.z;
 		res.z = T.z * color.x + B.z * color.y + nDir.z * color.z;
@@ -82,7 +82,7 @@ void changeNormalDir(Intersection& inter, PPMGenerator* g) {
 
 void textureModify(Intersection& inter, PPMGenerator* g) {
 	// DIFFUSE
-	if (!FLOAT_EQUAL(-1.f, inter.diffuseIndex)) {
+	if (!FLOAT_EQUAL(-1.0, inter.diffuseIndex)) {
 		if (g->diffuseMaps.size() <= inter.diffuseIndex) {
 			std::cout <<
 				"\ninter.diffuseIndex is greater than diffuseTexuture.size()\nImport texture files in config.txt \n";
@@ -126,9 +126,9 @@ void textureModify(Intersection& inter, PPMGenerator* g) {
 /// <param name="p">inter information</param>
 /// <param name="lightPos">light position</param>
 /// <returns>if the ray is blocked by non-emissive obj, return true</returns>
-bool isShadowRayBlocked(Vector3f orig, Vector3f& lightPos, PPMGenerator* g) {
-	Vector3f raydir = normalized(lightPos - orig);
-	float distance = (lightPos - orig).norm();
+bool isShadowRayBlocked(Vector3d orig, Vector3d& lightPos, PPMGenerator* g) {
+	Vector3d raydir = normalized(lightPos - orig);
+	double distance = (lightPos - orig).norm();
 
 	if (!EXPEDITE) {
 		Intersection p_light_inter;
@@ -146,11 +146,11 @@ bool isShadowRayBlocked(Vector3f orig, Vector3f& lightPos, PPMGenerator* g) {
 	}
 }
 
-float getLightPdf(Intersection& inter, PPMGenerator* g) {
+double getLightPdf(Intersection& inter, PPMGenerator* g) {
 	if (!inter.intersected) return 0;
 
 	static std::vector<Object*> lightList;
-	static float totalArea = 0;
+	static double totalArea = 0;
 	static bool firstimeCall = true;
 	int size = lightList.size();
 
@@ -181,16 +181,16 @@ float getLightPdf(Intersection& inter, PPMGenerator* g) {
 	if (!inter.obj->mtlcolor.hasEmission()) return 0;
 
 	// independent event p(a&&b) == p(a) *  p(b)
-	float area = inter.obj->getArea();
+	double area = inter.obj->getArea();
 	return  1 / (size * area);
 }
 
 // sample all the emissive object to get one point on their surface,
 // update the intersection, and the pdf to sample it
 // pdf of that inter is, 1/area of THE object surface area
-void sampleLight(Intersection& inter, float& pdf, PPMGenerator* g) {
+void sampleLight(Intersection& inter, double& pdf, PPMGenerator* g) {
 	static std::vector<Object*> lightList;
-	static float totalArea = 0;
+	static double totalArea = 0;
 	static bool firstimeCall = true;
 	int size = lightList.size();
 
@@ -221,12 +221,12 @@ void sampleLight(Intersection& inter, float& pdf, PPMGenerator* g) {
 	}
 
 	// 3/3/2024 need a better sample method
-	int index = (int)(getRandomFloat() * (size - 1) + 0.4999f);
+	int index = (int)(getRandomFloat() * (size - 1) + 0.4999);
 	if (size == 1) index = 0;
 
 	Object* lightObject = lightList.at(index);
 
 	lightObject->samplePoint(inter, pdf);
 	// independent event p(a&&b) == p(a) *  p(b)
-	pdf = (1.f / (size * lightObject->getArea()));
+	pdf = (1.0 / (size * lightObject->getArea()));
 }
